@@ -3,3 +3,4 @@ visited_links.pkl
 data/
 Crawler_RELATED_log
 Crawler_SELENIUM_log
+extract_concrete.py
