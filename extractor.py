@@ -35,7 +35,11 @@ def get_players_score(file):
 
 def get_genre(file):
     match = re.search(r'Genre (.*?)\s*(?=Perspective|Gameplay|Interface|Setting|Narrative|Misc)', file)
-    result = match.group(1).strip()
+    
+    if match:
+        result = match.group(1).strip()
+    else:
+        return 'N/A'
     
     genre_exceptions = [
         'Racing / Driving',
@@ -51,8 +55,12 @@ def get_genre(file):
         return 'N/A'   
 
 def get_perspective(file):
-    match = re.search(r'Perspective (.*?)\s*(?=Gameplay|Interface|Setting|Narrative|Misc)', file)
-    result = match.group(1).strip()
+    match = re.search(r'Perspective (.*?)\s*(?=Gameplay|Interface|Setting|Narrative|Misc|Business Model)', file)
+    
+    if match:
+        result = match.group(1).strip()
+    else:
+        return 'N/A'
     
     pattern = r'([13A-Z].*?[a-z\-\s\/\']*)'
     
@@ -63,8 +71,12 @@ def get_perspective(file):
         return 'N/A' 
 
 def get_gameplay(file):
-    match = re.search(r'Gameplay (.*?)\s*(?=Interface|Setting|Narrative|Misc)', file)
-    result = match.group(1).strip()
+    match = re.search(r'Gameplay (.*?)\s*(?=Interface|Setting|Narrative|Misc|Wanted)', file)
+    
+    if match:
+        result = match.group(1).strip()
+    else:
+        return 'N/A'
     
     gameplay_exceptions = [
         'Japanese-style RPG \(JRPG\)',
@@ -105,6 +117,8 @@ if __name__ == '__main__':
     for file in os.listdir(TEXT_DATA_DIR):
         filename = os.fsdecode(file).split('.')[0]
         
+        print(f'Processing file {filename}\n') #DEBUG
+        
         text_file_path = os.path.join(TEXT_DATA_PATH, filename+'.txt')
         html_file_path = os.path.join(HTML_DATA_PATH, filename+'.html')
         json_file = os.path.join(JSON_DATA_PATH, filename+'.json')
@@ -132,3 +146,5 @@ if __name__ == '__main__':
         
         with open(json_file, 'w') as j:
             json.dump(data_dict, j)
+    
+    print('DONE\n') #DEBUG

@@ -4,3 +4,6 @@ data/
 Crawler_RELATED_log
 Crawler_SELENIUM_log
 extract_concrete.py
+doc_docID.pkl
+term_termID.pkl
+index
