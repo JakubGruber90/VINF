@@ -40,6 +40,9 @@ if __name__ == '__main__':
     for file in os.listdir(JSON_DATA_DIR):
         filename = os.fsdecode(file).split('.')[0]
         json_file = os.path.join(JSON_DATA_PATH, filename+'.json')
+        
+        print(f'File no.{total_docs + 1}: {filename} is being processed\n') #DEBUG
+        
         total_docs += 1
         
         with open(json_file, 'r', encoding='utf-8') as f:

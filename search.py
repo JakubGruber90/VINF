@@ -36,7 +36,7 @@ def calculate_tf_idf(term_frequency, total_terms_in_document, total_docs, docs_w
     idf = math.log(total_docs / docs_with_term)
     return tf * idf
 
-def search(query):
+def search(query, max_results):
     doc_id = load_doc_id()
     term_id = load_term_id()
     index = load_index()
@@ -77,25 +77,32 @@ def search(query):
 
     results = []
     for id_of_doc, score in sorted_results:
-        doc_name = doc_id[id_of_doc]
-        results.append({
-            'id_of_doc': id_of_doc,
-            'doc_name': doc_name,
-            'score': score
-        })
+        if len(results) < max_results:
+            doc_name = doc_id[id_of_doc]
+            results.append({
+                'id_of_doc': id_of_doc,
+                'doc_name': doc_name,
+                'score': score
+            })
+        else:
+            break
 
     return results
 
 if __name__ == '__main__':
     end = False
     while not end:
-        print('\nEnter your query (use operators AND, OR between seearched words). To end program, enter "END":\n')
+        print('\nEnter your query (use operators AND, OR between seearched words). To end program, enter "END":')
         user_input = input().strip()
         if user_input == 'END':
             end = True
             continue
         
-        search_results = search(user_input)
+        print('Choose number of results to be shown:')
+        max_results_str = input().strip()
+        max_results = int(max_results_str)
+        
+        search_results = search(user_input, max_results)
         if search_results:
             for result in search_results:
                 print(f'DocID: {result["id_of_doc"]}, Document: {result["doc_name"]}, Score: {result["score"]}')
