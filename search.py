@@ -15,16 +15,18 @@ def load_index():
     with open('index.pkl', 'rb') as p:
         return pickle.load(p)
 
-def tokenize_query(query):
+def tokenize_query(query: str):
     query = re.sub(r'[^\w\s]', '', query).lower()
     return query.split()
 
-def parse_query(query):
-    if 'AND' in query:
-        terms = query.split(' AND ')
+def parse_query(query: str):
+    match = re.findall(r'\sor\s|\sOR\s', query)
+    
+    if ' ' in query and not match:
+        terms = query.split(' ')
         operator = 'AND'
-    elif 'OR' in query:
-        terms = query.split(' OR ')
+    elif match:
+        terms = query.lower().split(' or ')
         operator = 'OR'
     else:
         terms = [query]
@@ -92,7 +94,7 @@ def search(query, max_results):
 if __name__ == '__main__':
     end = False
     while not end:
-        print('\nEnter your query (use operators AND, OR between seearched words). To end program, enter "END":')
+        print('\nEnter your query. To end program, enter "END":')
         user_input = input().strip()
         if user_input == 'END':
             end = True
@@ -110,4 +112,4 @@ if __name__ == '__main__':
             print('No results')
     
     print('\nEnding program...')
-    time.sleep(2)
+    time.sleep(1)

@@ -32,7 +32,7 @@ http = urllib3.PoolManager()
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 ###Function definitions
-def crawl(start_url): #crawler logic
+def crawl(start_url: str): #crawler logic
     global stop_crawler
     html_data = None
     text_data = None
@@ -76,11 +76,11 @@ def stop_crawling(sig, frame): #function to stop the crawler
     global stop_crawler
     stop_crawler = True
 
-def check_for_visited_games(links): #function to remove links, that have already been visited
+def check_for_visited_games(links: list[str]): #function to remove links, that have already been visited
     non_visited_links = [link for link in links if link not in visited_links]
     return non_visited_links
 
-def find_related_games(html_data): #function to extract all links to games in the related gaes section
+def find_related_games(html_data: bytes): #function to extract all links to games in the related gaes section
     html_data = html_data.decode('utf-8')
         
     related_section = re.search(r'<section id="relatedGames">([\s\S]*?)</section>', html_data)
@@ -92,7 +92,7 @@ def find_related_games(html_data): #function to extract all links to games in th
     
     return game_links_list
     
-def prepare_text_data(html_data): #function to extract only text from html files
+def prepare_text_data(html_data: bytes): #function to extract only text from html files
     html_data = html_data.decode('utf-8')
     text_data = re.sub(r'<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script\s*>', ' ', html_data) #get rid of all script tags and their contents
     text_data = re.sub(r'<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style\s*>', ' ', text_data) #get rid os style tags and their contents
@@ -100,7 +100,7 @@ def prepare_text_data(html_data): #function to extract only text from html files
     
     return text_data
     
-def save_files(html_data, text_data, url): #function to save raw html and text data from webpages
+def save_files(html_data: bytes, text_data: str, url: str): #function to save raw html and text data from webpages
     html_data = html_data.decode('utf-8')
     game_name = game_name_from_url(url)
     raw_file = os.path.join(HTML_DATA_DIR, game_name+'.html')

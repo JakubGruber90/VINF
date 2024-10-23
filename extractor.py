@@ -9,31 +9,31 @@ JSON_DATA_PATH = os.path.join(CURR_DIR, 'data', 'data_json')
 TEXT_DATA_DIR = os.fsencode(TEXT_DATA_PATH)
 
 ### Functions to extract key info with regex
-def get_released(file):
+def get_released(file: str):
     match = re.search(r'Released ((?:January|February|March|April|May|June|July|August|September|October|November|December)? ?[1-9]?[1-9]?,? ?\d{4})', file)
     return match.group(1) if match else 'N/A'
 
-def get_publishers(file):
+def get_publishers(file: str):
     match = re.search(r'Publishers(.*?)\s+(?=Developers|Moby Score)', file)
     return match.group(1).strip() if match else 'N/A'
 
-def get_developers(file):
+def get_developers(file: str):
     match = re.search(r'Developers(.*?)\s+(?=Moby Score)', file)
     return match.group(1).strip() if match else 'N/A'
 
-def get_moby_score(file):
+def get_moby_score(file: str):
     match = re.search(r'Moby Score ([0-9]\.[0-9])', file)
     return match.group(1) if match else 'N/A'
 
-def get_critics_score(file):
+def get_critics_score(file: str):
     match = re.search(r'Critics (\d?\d%)', file)
     return match.group(1) if match else 'N/A'
 
-def get_players_score(file): 
+def get_players_score(file: str): 
     match = re.search(r'Players(?:.*?)(\d\.\d stars)', file)
     return match.group(1) if match else 'N/A'
 
-def get_genre(file):
+def get_genre(file: str):
     match = re.search(r'Genre (.*?)\s*(?=Perspective|Gameplay|Interface|Setting|Narrative|Misc)', file)
     
     if match:
@@ -54,7 +54,7 @@ def get_genre(file):
     else:
         return 'N/A'   
 
-def get_perspective(file):
+def get_perspective(file: str):
     match = re.search(r'Perspective (.*?)\s*(?=Gameplay|Interface|Setting|Narrative|Misc|Business Model)', file)
     
     if match:
@@ -70,7 +70,7 @@ def get_perspective(file):
     else:
         return 'N/A' 
 
-def get_gameplay(file):
+def get_gameplay(file: str):
     match = re.search(r'Gameplay (.*?)\s*(?=Interface|Setting|Narrative|Misc|Wanted)', file)
     
     if match:
@@ -101,7 +101,7 @@ def get_gameplay(file):
     else:
         return 'N/A' 
 
-def get_description(file):
+def get_description(file: str):
     orig_desc_match = re.search(r'Official Description \(Ad Blurb\)(.*?)(?=Source)', file)
     desc_match = re.search(r'Description\n?(.*?)\n?(?=Spellings|Groups|Screenshots|Promos|Videos|Credits|Reviews|Critics|Trivia|Analytics|Related Games| Related sites|Identifiers|Contribute)', file)
    
