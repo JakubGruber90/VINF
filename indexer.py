@@ -4,13 +4,24 @@ import json
 import re
 from collections import defaultdict
 
-def tokenize(json_obj: json):
+CURR_DIR = os.getcwd()
+JSON_DATA_PATH = os.path.join(CURR_DIR, 'data', 'data_json')
+JSON_DATA_DIR = os.fsencode(JSON_DATA_PATH)
+
+index = defaultdict(lambda: []) #dictionary for index
+term_id = {} #dictionary for termID - term couples
+doc_id = {} #dictionary for docID - docName
+next_term_id = 1 #variable for term IDs
+next_doc_id = 1 #variable for doc IDs
+
+def tokenize(json_obj: json): #tokenization of the json file
     json_string = json.dumps(json_obj)
-    json_string = re.sub(r'[^\w\s]', '', json_string).lower()
+    json_string = re.sub(r'[^\w\s]', '', json_string).lower() #deletion of interpunction and lowercasing
     tokens = json_string.split()
     
     return tokens
 
+### Serializing the id mappings of terms and docs and index
 def serialize_doc_id(doc_id: dict):
     with open('doc_docID.pkl', 'wb') as p:
         pickle.dump(doc_id, p)
@@ -24,16 +35,6 @@ def serialize_index(index: dict):
     with open('index.pkl', 'wb') as p:
         pickle.dump(index_regular_dict, p)
 
-CURR_DIR = os.getcwd()
-JSON_DATA_PATH = os.path.join(CURR_DIR, 'data', 'data_json')
-JSON_DATA_DIR = os.fsencode(JSON_DATA_PATH)
-
-index = defaultdict(lambda: (0, [])) #dictionary for index
-term_id = {} #dictionary for termID - term couples
-doc_id = {} #dictionary for docID - docName
-next_term_id = 1 #variable for term IDs
-next_doc_id = 1 #variable for doc IDs
-
 if __name__ == '__main__':
     total_docs = 0
     
@@ -41,9 +42,8 @@ if __name__ == '__main__':
         filename = os.fsdecode(file).split('.')[0]
         json_file = os.path.join(JSON_DATA_PATH, filename+'.json')
         
-        print(f'File no.{total_docs + 1}: {filename} is being processed\n') #DEBUG
-        
         total_docs += 1
+        print(f'File no.{total_docs}: {filename} is being processed\n')
         
         with open(json_file, 'r', encoding='utf-8') as f:
             open_file = json.load(f)
@@ -52,27 +52,30 @@ if __name__ == '__main__':
             current_doc_id = next_doc_id
             next_doc_id +=1
             tokenized_doc = tokenize(open_file)
-            term_doc_frequency = {} #dictionary for term - docFrequency
+            term_termfrequency = {} #dictionary for term - termFrequency
+            max_doc_frequency = -1 
             
-            for term in tokenized_doc:
-                if term in term_doc_frequency:
-                    term_doc_frequency[term] += 1
+            for term in tokenized_doc: #counting term frequencies in the document
+                if term in term_termfrequency:
+                    term_termfrequency[term] += 1
                 else:
-                    term_doc_frequency[term] = 1
-            
+                    term_termfrequency[term] = 1
+
+                if term_termfrequency[term] > max_doc_frequency:
+                    max_doc_frequency = term_termfrequency[term]
+                
                 if term not in term_id:
                     term_id[term] = next_term_id
                     next_term_id += 1 
             
-            for term, doc_frequency in term_doc_frequency.items():
+            for term, term_frequency in term_termfrequency.items(): #save the posting list to index
                 id_of_term = term_id.get(term)
                 
-                total_frequency, posting_list = index[id_of_term]
-                total_frequency += doc_frequency
-                posting_list.append((current_doc_id, doc_frequency, len(tokenized_doc)))
-                index[id_of_term] = (total_frequency, posting_list)
+                posting_list = index[id_of_term]
+                posting_list.append((current_doc_id, term_frequency, len(tokenized_doc), max_doc_frequency))
+                index[id_of_term] = posting_list
                 
-    index['TOTAL_DOCS'] = total_docs
+    index['TOTAL_DOCS'] = total_docs #save the total number of documents in collection to index
     serialize_doc_id(doc_id)
     serialize_term_id(term_id)
     serialize_index(index)

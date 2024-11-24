@@ -1,11 +1,11 @@
 import re
 import os
-import json
+import csv
 
 CURR_DIR = os.getcwd()
 TEXT_DATA_PATH = os.path.join(CURR_DIR, 'data', 'data_text')
 HTML_DATA_PATH = os.path.join(CURR_DIR, 'data', 'data_raw')
-JSON_DATA_PATH = os.path.join(CURR_DIR, 'data', 'data_json')
+OUTPUT_CSV = os.path.join(CURR_DIR, 'data', 'phase_1.csv')
 TEXT_DATA_DIR = os.fsencode(TEXT_DATA_PATH)
 
 ### Functions to extract key info with regex
@@ -42,9 +42,9 @@ def get_genre(file: str):
         return 'N/A'
     
     genre_exceptions = [
-        'Racing / Driving',
-        'Role-playing \(RPG\)',
-        'Strategy / tactics'
+        r'Racing / Driving',
+        r'Role-playing \(RPG\)',
+        r'Strategy / tactics'
     ]
     pattern = r'(' + '|'.join(genre_exceptions) + r'|[A-Z][a-z\-\s]*)'
     
@@ -79,19 +79,19 @@ def get_gameplay(file: str):
         return 'N/A'
     
     gameplay_exceptions = [
-        'Japanese-style RPG \(JRPG\)',
-        'Turn-based tactics \(TBT\)',
-        'Quick Time Events \(QTEs\)',
-        'Real-time strategy \(RTS\)',
-        'Real-time tactics \(RTT\)',
-        'Turn-based strategy \(TBS\)',
-        'Turn-based tactics \(TBT\)',
-        'Action RPG',
-        'Tactical RPG',
-        '4X',
-        'Massively Multiplayer',
-        'Paddle / Pong',
-        'RPG elements'
+        r'Japanese-style RPG \(JRPG\)',
+        r'Turn-based tactics \(TBT\)',
+        r'Quick Time Events \(QTEs\)',
+        r'Real-time strategy \(RTS\)',
+        r'Real-time tactics \(RTT\)',
+        r'Turn-based strategy \(TBS\)',
+        r'Turn-based tactics \(TBT\)',
+        r'Action RPG',
+        r'Tactical RPG',
+        r'4X',
+        r'Massively Multiplayer',
+        r'Paddle / Pong',
+        r'RPG elements'
     ]
     pattern = r'('+'|'.join(gameplay_exceptions)+r'|[4A-Z].*?[a-z\-\s\/\']*)'
     
@@ -114,37 +114,40 @@ def get_description(file: str):
 
 ### Main
 if __name__ == '__main__': 
-    for file in os.listdir(TEXT_DATA_DIR):
-        filename = os.fsdecode(file).split('.')[0]
+    with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as csvfile:
+        fieldnames = ['Game Name', 'Released', 'Publishers', 'Developers', 'Moby Score', 'Critics Score', 'Players Score', 'Genre', 'Perspective', 'Gameplay', 'Description']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter="|")
         
-        print(f'Processing file {filename}\n')
+        for file in os.listdir(TEXT_DATA_DIR):
+            filename = os.fsdecode(file).split('.')[0]
+            
+            print(f'Processing file {filename}\n')
+            
+            text_file_path = os.path.join(TEXT_DATA_PATH, filename+'.txt')
+            html_file_path = os.path.join(HTML_DATA_PATH, filename+'.html')
+            
+            with open(text_file_path, 'r', encoding='utf-8') as r:
+                text_file = r.read()
+            
+            text_clean = ' '.join(text_file.split())  # Strip text file of unwanted whitespace characters for easier regex
+            
+            with open(html_file_path, 'r', encoding='utf-8') as r:
+                html_file = r.read()
+            
+            data_dict = {
+                'Game Name': filename,
+                'Released': get_released(text_clean),
+                'Publishers': get_publishers(text_clean),
+                'Developers': get_developers(text_clean),
+                'Moby Score': get_moby_score(text_clean),
+                'Critics Score': get_critics_score(text_clean),
+                'Players Score': get_players_score(html_file),
+                'Genre': get_genre(text_clean),
+                'Perspective': get_perspective(text_clean),
+                'Gameplay': get_gameplay(text_clean),
+                'Description': get_description(text_clean)
+            }
+            
+            writer.writerow(data_dict)
         
-        text_file_path = os.path.join(TEXT_DATA_PATH, filename+'.txt')
-        html_file_path = os.path.join(HTML_DATA_PATH, filename+'.html')
-        json_file = os.path.join(JSON_DATA_PATH, filename+'.json')
-        
-        with open(text_file_path, 'r', encoding='utf-8') as r:
-            text_file = r.read()
-        
-        text_clean = ' '.join(text_file.split())  # Strip text file of unwanted whitespace characters for easier regex
-        
-        with open(html_file_path, 'r', encoding='utf-8') as r:
-            html_file = r.read()
-        
-        data_dict = {
-            'Released': get_released(text_clean),
-            'Publishers': get_publishers(text_clean),
-            'Developers': get_developers(text_clean),
-            'Moby Score': get_moby_score(text_clean),
-            'Critics Score': get_critics_score(text_clean),
-            'Players Score': get_players_score(html_file),
-            'Genre': get_genre(text_clean),
-            'Perspective': get_perspective(text_clean),
-            'Gameplay': get_gameplay(text_clean),
-            'Description': get_description(text_clean)
-        }
-        
-        with open(json_file, 'w') as j:
-            json.dump(data_dict, j)
-    
-    print('DONE\n')
+        print('DONE\n')

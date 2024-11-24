@@ -133,7 +133,7 @@ def load_visited_links():  # Load visited links from a file
         LOGGER.info('No previous visited links found.') 
 
 ###Main
-if __name__ == '__main__': # https://www.mobygames.com/game/77086/the-talos-principle-prototype-dlc/ CONTINUE HERE
+if __name__ == '__main__':
     load_visited_links()
     signal.signal(signal.SIGINT, stop_crawling)
     
