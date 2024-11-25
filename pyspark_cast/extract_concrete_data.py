@@ -1,13 +1,12 @@
 import os
 import re
-import bz2
 import time
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType
 
 # Paths for input and output
-FILEPATH = r".\\enwiki-latest-pages-articles1.xml-p1p41242.bz2"
-OUTPUTPATH = r".\\OUTPUT_FOLDER"
+FILEPATH = r".\\FILTERED_MERGED\\part-00000"
+OUTPUTPATH = r".\\EXTRACTED_INFO"
 
 # Spark setup
 os.environ["PYSPARK_PYTHON"] = r"C:\\Python310\\python.exe"
@@ -15,7 +14,7 @@ os.environ["PYSPARK_DRIVER_PYTHON"] = r"C:\\Python310\\python.exe"
 
 spark: SparkSession = SparkSession.builder \
     .master("local[6]") \
-    .appName("Wikipedia XML Processing") \
+    .appName("Extract conrete data") \
     .config("spark.executor.memory", "6g") \
     .config("spark.driver.memory", "6g") \
     .config("spark.executor.memoryOverhead", "2g") \
@@ -32,60 +31,60 @@ spark: SparkSession = SparkSession.builder \
     .getOrCreate()
 sc = spark.sparkContext
 
-# Regexes for video game page filtering
-#namespace regex 0 -> namespace for Main/Article
-NAMESPACE_REGEX = r"<ns>0"
+#regexes for information extraction
+TITLE = r"<title>(.+)(?=<\/title>)" #not from infobox, because title is sometimes missing there, but not the page title
+ENGINE = r"\|\s*engine\s=(.+)(?:\n)"
+PLATFORMS = r"\|\s*platforms\s*=\s*(.+)(?:\n)"
+DIRECTOR = r"\|\s*director\s*=\s*(.+)(?:\n)"
+PRODUCER = r"\|\s*producer\s*=\s*(.+)(?:\n)"
+DESIGNER = r"\|\s*designer\s*=\s*(.+)(?:\n)"
+PROGRAMMER = r"\|\s*programmer\s*=\s*(.+)(?:\n)"
+ARTIST = r"\|\s*artist\s*=\s*(.+)(?:\n)"
+WRITER = r"\|\s*writer\s*=\s*(.+)(?:\n)"
+COMPOSER = r"\|\s*composer\s*=\s*(.+)(?:\n)"
 
-#regex for redirect page
-REDIRECT_REGEX = r"<redirect.+?/>"
+def clean_text(text):
+    text = re.sub(r"[\[\]\{\}\|]|Unbulleted list|&lt;|&gt;", " ", text)
+    text = re.sub(r"\s{2,}", " ", text)
+    return text.strip()
 
-#video game page regexes
-video_game_title = r"(<title>.+?[Vv]ideo [Gg]ame(?!\s+[Ss]eries|\s+[Cc]ompany).+?</title>)"
-video_game_infobox = r"\{\{\s*[Ii]nfobox\s+[Vv]ideo\s+[Gg]ame"
-video_game_short_desc = r"({{Short description\|.+?video game}})"
-video_game_categories = r"(\[\[Category:.*?(?:[Vv]ideo games|[Mm]ultiplayer games|[Pp]lay[Ss]tation|[Xx][Bb]ox|[Bb]rowser games|[Ff]irst-[Pp]erson [Ss]hooter|[Gg]ame [Oo]f [Tt]he [Yy]ear|[Gg]ame [Aa]ward|[Ww]indows [Gg]ames|IOS [Gg]ames).*?\]\])"
+def edit_title(title: str):
+    title = title.lower()
+    title = re.sub(r":|'|\(\s*(?:\d\d\d\d)?\s*video\s*game\s*\)", "", title)
+    title = "-".join(title.strip().split(" "))
 
-VIDEO_GAME_FILTER_REGEXES = {
-    video_game_title,
-    video_game_short_desc,
-    video_game_infobox,
-}
+    return title
 
-INFOBOX_REGEX = r"\{\{\s*[Ii]nfobox\s+[Vv]ideo\s+[Gg]ame(.+?)\}\}"
-TITLE_REGEX = r"<title>(.+?)</title>"
-
-def extract_infobox(page: str):
-    title_match = re.search(TITLE_REGEX, page)
-    infobox_match = re.search(INFOBOX_REGEX, page, re.DOTALL)
-    if not title_match or not infobox_match:
-        return None
-    title = title_match.group(1).strip()
-    infobox_content = infobox_match.group(1).strip()
+def extract_page_info(page: str) -> dict:
+    title_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(TITLE, page)))
+    engine_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(ENGINE, page)))
+    platforms_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(PLATFORMS, page)))
+    director_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(DIRECTOR, page)))
+    producer_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(PRODUCER, page)))
+    designer_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(DESIGNER, page)))
+    programmer_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(PROGRAMMER, page)))
+    artist_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(ARTIST, page)))
+    writer_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(WRITER, page)))
+    composer_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(COMPOSER, page)))
     
-    infobox_dict = {}
-    for line in infobox_content.split("\n"):
-        if "=" in line:
-            key, value = map(str.strip, line.split("=", 1))
-            infobox_dict[key] = value
-    
-    return (title, infobox_dict)
+    title_match = edit_title(title_match)
 
-# Filter function
-def filter_page(page: str) -> bool:
-    if not re.search(NAMESPACE_REGEX, page):
-        return None
-    
-    if re.search(REDIRECT_REGEX, page):
-        return None
-    
-    for pattern in VIDEO_GAME_FILTER_REGEXES:
-        if re.search(pattern, page):
-            return extract_infobox(page)
-    return None
+    return {
+        "title": title_match,
+        "engine": engine_match,
+        "platforms": platforms_match,
+        "director": director_match,
+        "producer": producer_match,
+        "designer": designer_match,
+        "programmer": programmer_match,
+        "artist": artist_match,
+        "writer": writer_match,
+        "composer": composer_match,
+    }
 
 #Yield pages from dump
 def page_generator(filepath: str):
-    with bz2.open(filepath, "rt", encoding="utf-8") as file:
+    with open(filepath, "rt", encoding="utf-8") as file:
         buffer = []
         in_page = False
         
@@ -98,50 +97,41 @@ def page_generator(filepath: str):
             if "</page>" in line and in_page:
                 yield "".join(buffer)
                 in_page = False
-     
-def process_chunk_with_spark(chunk, output_path, chunk_counter):
-    rdd = sc.parallelize(chunk)
-    extracted_rdd = rdd.map(filter_page).filter(lambda x: x is not None)
-    
-    results = extracted_rdd.collect()
-    processed_results = []
-    for title, infobox in results:
-        flattened_infobox = "; ".join(f"{k}: {v}" for k, v in infobox.items())
-        processed_results.append((title, flattened_infobox))
-        
-    if processed_results:
-        schema = StructType([
-            StructField("Title", StringType(), True),
-            StructField("Infobox", StringType(), True)
-        ])
-
-        df = spark.createDataFrame(processed_results, schema=schema)
-        chunk_output_path = os.path.join(output_path, f"chunk_{chunk_counter}.csv")
-        df.write.csv(chunk_output_path, header=True, mode="overwrite")
-        print(f"Saved chunk {chunk_counter} to {chunk_output_path}")
-    else:
-        print(f"No relevant pages in chunk {chunk_counter}.")
-            
-def process_wiki_dump_in_chunks(file_path, output_path, chunk_size=20000):
-    chunk_counter = 0
-    current_chunk = []
+                 
+def process_wiki_dump(file_path, output_path):
     os.makedirs(output_path, exist_ok=True)
     
-    for page in page_generator(file_path):
-        current_chunk.append(page)
-        
-        if len(current_chunk) >= chunk_size:
-            process_chunk_with_spark(current_chunk, output_path, chunk_counter)
-            current_chunk = []
-            chunk_counter +=1
-        
-    if current_chunk:
-        print(f"Processing final chunk {chunk_counter}...")
-        process_chunk_with_spark(current_chunk, output_path, chunk_counter)
+    schema = StructType([
+        StructField("title", StringType(), True),
+        StructField("engine", StringType(), True),
+        StructField("platforms", StringType(), True),
+        StructField("director", StringType(), True),
+        StructField("producer", StringType(), True),
+        StructField("designer", StringType(), True),
+        StructField("programmer", StringType(), True),
+        StructField("artist", StringType(), True),
+        StructField("writer", StringType(), True),
+        StructField("composer", StringType(), True),
+    ])
+    
+    pages = list(page_generator(file_path))
+    rdd = sc.parallelize(pages)
+    print("Number of video game pages: ", rdd.count())
+    extracted_rdd = rdd.map(extract_page_info)
+    df = spark.createDataFrame(extracted_rdd, schema=schema)
+    
+    single_partition_df = df.coalesce(1)
+    single_partition_df.write.csv(
+        output_path,
+        header=False,
+        mode="overwrite",
+        sep="|",
+        lineSep="\n"
+    )
 
 if __name__ == "__main__":
     start = time.time()
-    process_wiki_dump_in_chunks(FILEPATH, OUTPUTPATH)
+    process_wiki_dump(FILEPATH, OUTPUTPATH)
     spark.stop()
     end = time.time()
     

@@ -383,7 +383,14 @@ def clean_text(text):
     text = re.sub(r"\s{2,}", " ", text)
     return text.strip()
 
-title = r"\|\stitle\s=(.+)(?:\n)"
+def edit_title(title: str):
+    title = title.lower()
+    title = re.sub(r"\(video game\)", "", title)
+    title = "-".join(title.strip().split(" "))
+
+    return title
+    
+title = r"<title>(.+)(?=<\/title>)"
 engine = r"\|\sengine\s=(.+)(?:\n)"
 platforms = r"\|\splatforms\s=(.+)(?:\n)"
 director = r"\|\sdirector\s=(.+)(?:\n)"
@@ -405,6 +412,8 @@ artist_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(artis
 writer_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(writer, page_string)))
 composer_match = clean_text((lambda m: m.group(1) if m else "N/A")(re.search(composer, page_string)))
 
+title_match = edit_title(title_match)
+
 extract_dict = {
     "title": title_match,
     "engine": engine_match,
@@ -412,7 +421,7 @@ extract_dict = {
     "director": director_match,
     "producer": producer_match,
     "designer": designer_match,
-    "programmer": producer_match,
+    "programmer": programmer_match,
     "artist": artist_match,
     "writer": writer_match,
     "composer": composer_match,
